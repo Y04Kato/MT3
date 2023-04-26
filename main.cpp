@@ -1,12 +1,35 @@
 #include <Novice.h>
+#include "Matrix4x4.h"
+#include "Vector3.h"
+#include <cmath>
 
 const char kWindowTitle[] = "LE2B_07_カトウユウタ_タイトル";
+
+//1 X軸回転行列
+Matrix4x4 MakeRotateXmatrix(float radian) {
+
+}
+
+//2 Y軸回転行列
+Matrix4x4 MakeRotateYmatrix(float radian) {
+
+}
+
+//3 Z軸回転行列
+Matrix4x4 MakeRotateZmatrix(float radian) {
+
+}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle, 1280, 720);
+
+	Vector3 rotate{ 0.4f,1.43f,-0.8f };
+	Matrix4x4 rotateXMatrix = MakeRotateXmatrix(rotate.x);
+	Matrix4x4 rotateYMatrix = MakeRotateYmatrix(rotate.y);
+	Matrix4x4 rotateZMatrix = MakeRotateZmatrix(rotate.z);
 
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
@@ -24,7 +47,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		/// ↓更新処理ここから
 		///
-
+		
 		///
 		/// ↑更新処理ここまで
 		///
@@ -32,7 +55,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		/// ↓描画処理ここから
 		///
-
+		
 		///
 		/// ↑描画処理ここまで
 		///
