@@ -20,6 +20,25 @@ Matrix4x4 MakeRotateZmatrix(float radian) {
 
 }
 
+static const int kRowHeight = 20;
+static const int kColumnWidth = 60;
+
+void VectorScreenPrintf(int x, int y, const Vector3& vector3, const char* name) {
+	Novice::ScreenPrintf(x + 1 * kColumnWidth, y + kRowHeight, "%6.02f", vector3.x);
+	Novice::ScreenPrintf(x + 2 * kColumnWidth, y + kRowHeight, "%6.02f", vector3.y);
+	Novice::ScreenPrintf(x + 3 * kColumnWidth, y + kRowHeight, "%6.02f", vector3.z);
+	Novice::ScreenPrintf(x + 4 * kColumnWidth, y + kRowHeight, "%s", name);
+}
+
+void MatrixScreenPrintf(int x, int y, const Matrix4x4& matrix, const char* name) {
+	Novice::ScreenPrintf(x, y, "%s", name);
+	for (int row = 0; row < 4; ++row) {
+		for (int column = 0; column < 4; ++column) {
+			Novice::ScreenPrintf(x + column * kColumnWidth, y + row * kRowHeight + 20, "%6.02f", matrix.m[row][column]);
+		}
+	}
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -30,6 +49,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Matrix4x4 rotateXMatrix = MakeRotateXmatrix(rotate.x);
 	Matrix4x4 rotateYMatrix = MakeRotateYmatrix(rotate.y);
 	Matrix4x4 rotateZMatrix = MakeRotateZmatrix(rotate.z);
+	Matrix4x4 rotateXYZMatrix = Multiply(rotateXMatrix, Multiply(rotateYMatrix, rotateZMatrix));
 
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
@@ -55,7 +75,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		/// ↓描画処理ここから
 		///
-		
+		MatrixScreenPrintf(0, 0, rotateXMatrix, "rotateXMatrix");
+		MatrixScreenPrintf(0, kRowHeight * 5, rotateYMatrix, "rotateYMatrix");
+		MatrixScreenPrintf(0, kRowHeight * 5 * 2, rotateZMatrix, "rotateZMatrix");
+		MatrixScreenPrintf(0, kRowHeight * 5 * 3, rotateXYZMatrix, "rotateXYZMatrix");
+
 		///
 		/// ↑描画処理ここまで
 		///
