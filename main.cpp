@@ -2,6 +2,7 @@
 #include "Matrix4x4.h"
 #include "Vector3.h"
 #include <cmath>
+#include<assert.h>
 
 const char kWindowTitle[] = "LE2B_07_カトウユウタ_タイトル";
 
@@ -160,11 +161,16 @@ Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 
 Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
 	Matrix4x4 result;
+	Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
 
 	Matrix4x4 rotateXMatrix = MakeRotateXmatrix(rotate.x);
 	Matrix4x4 rotateYMatrix = MakeRotateYmatrix(rotate.y);
 	Matrix4x4 rotateZMatrix = MakeRotateZmatrix(rotate.z);
 	Matrix4x4 rotateXYZMatrix = Multiply(rotateXMatrix, Multiply(rotateYMatrix, rotateZMatrix));
+	
+	Matrix4x4 translateMatrix = MakeTranslateMatrix(translate);
+
+	result = Multiply(scaleMatrix, Multiply(rotateXYZMatrix, translateMatrix));
 	return result;
 }
 
