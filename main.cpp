@@ -141,8 +141,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		VectorScreenPrintf(0, 0, transformed, "transformed");
-		MatrixScreenPrintf(0, kRowHeight * 5, translateMatrix, "translateMatrix");
-		MatrixScreenPrintf(0, kRowHeight * 10, scaleMatrix, "scaleMatrix");
+		MatrixScreenPrintf(0, 10 + kRowHeight*5, translateMatrix, "translateMatrix");
+		MatrixScreenPrintf(0, 20 + kRowHeight * 10, scaleMatrix, "scaleMatrix");
 
 		///
 		/// ↑描画処理ここまで
