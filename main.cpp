@@ -1,92 +1,10 @@
 #include <Novice.h>
-#include "Vector3.h"
-#include "Matrix4x4.h"
-#include <cmath>
+#include "Matrix.h"
 
 const char kWindowTitle[] = "LE2B_07_カトウユウタ_タイトル";
 
 static const int kRowHeight = 20;
 static const int kColumnWidth = 60;
-
-float contangent(float b, float a) {
-	return(b / tan(a));
-}
-
-//透視投影行列
-Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRadio, float nearClip, float farClip) {
-	Matrix4x4 result;
-	result.m[0][0] = contangent((1 / aspectRadio), (fovY / 2));
-	result.m[0][1] = 0.0f;
-	result.m[0][2] = 0.0f;
-	result.m[0][3] = 0.0f;
-
-	result.m[1][0] = 0.0f;
-	result.m[1][1] = contangent(1,fovY/2);
-	result.m[1][2] = 0.0f;
-	result.m[1][3] = 0.0f;
-
-	result.m[2][0] = 0.0f;
-	result.m[2][1] = 0.0f;
-	result.m[2][2] = farClip / (farClip - nearClip);
-	result.m[2][3] = 1.0f;
-
-	result.m[3][0] = 0.0f;
-	result.m[3][1] = 0.0f;
-	result.m[3][2] = -nearClip*farClip/(farClip-nearClip);
-	result.m[3][3] = 0.0f;
-
-	return result;
-}
-
-//正射影行列
-Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) {
-	Matrix4x4 result;
-	result.m[0][0] = 2 / (right - left);
-	result.m[0][1] = 0.0f;
-	result.m[0][2] = 0.0f;
-	result.m[0][3] = 0.0f;
-
-	result.m[1][0] = 0.0f;
-	result.m[1][1] = 2 / (top - bottom);
-	result.m[1][2] = 0.0f;
-	result.m[1][3] = 0.0f;
-
-	result.m[2][0] = 0.0f;
-	result.m[2][1] = 0.0f;
-	result.m[2][2] = 1 / (farClip - nearClip);
-	result.m[2][3] = 0.0f;
-
-	result.m[3][0] = (left + right) / (left - right);
-	result.m[3][1] = (top + bottom) / (bottom - top);
-	result.m[3][2] = nearClip / (nearClip - farClip);
-	result.m[3][3] = 1.0f;
-	return result;
-}
-
-//ビューポート変換行列
-Matrix4x4 MakeViweportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth) {
-	Matrix4x4 result;
-	result.m[0][0] = width / 2;
-	result.m[0][1] = 0.0f;
-	result.m[0][2] = 0.0f;
-	result.m[0][3] = 0.0f;
-
-	result.m[1][0] = 0.0f;
-	result.m[1][1] = -(height / 2);
-	result.m[1][2] = 0.0f;
-	result.m[1][3] = 0.0f;
-
-	result.m[2][0] = 0.0f;
-	result.m[2][1] = 0.0f;
-	result.m[2][2] = maxDepth - minDepth;
-	result.m[2][3] = 0.0f;
-
-	result.m[3][0] = left + (width / 2);
-	result.m[3][1] = top + (height / 2);
-	result.m[3][2] = minDepth;
-	result.m[3][3] = 1.0f;
-	return result;
-}
 
 void VectorScreenPrintf(int x, int y, const Vector3& vector3, const char* name) {
 	Novice::ScreenPrintf(x + 1 * kColumnWidth, y + kRowHeight, "%6.02f", vector3.x);
@@ -104,19 +22,50 @@ void MatrixScreenPrintf(int x, int y, const Matrix4x4& matrix, const char* name)
 	}
 }
 
+Vector3 Cross(const Vector3& v1, const Vector3& v2) {
+	Vector3 result;
+	result.x = v1.x + v2.x;
+	result.y = v1.y + v2.y;
+	result.z = v1.z + v2.z;
+	return result;
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle, 1280, 720);
 
+	Vector3 v1{ 1.2f,-3.9f,2.5f };
+	Vector3 v2{ 2.0f,0.4f,-1.3f };
+	Vector3 cross = Cross(v1, v2);
+
+	Vector3 rotate{};
+	Vector3 translate{};
+
+	Vector3 cameraPosition{ 0.0f,0.0f,-10.0f };
+	Vector3 kLocalVertices[3]{
+		{1.5f,1.0f,1.0f},
+		{0.0f,-1.0f,1.0f},
+		{3.0f,-1.0f,1.0f}
+	};
+
+	Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
+	Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, { 0.0f,0.0f,0.0f }, cameraPosition);
+	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
+	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45, float(1280) / float(720), 0.1f, 100.0f);
+	Matrix4x4 worldviewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
+	Matrix4x4 viewportMatrix = MakeViweportMatrix(0, 0, float(1280), float(720), 0.0f, 1.0f);
+
+	Vector3 screenVertices[3];
+	for (uint32_t i = 0; i < 3; i++) {
+		Vector3 ndcVertex = Transform(kLocalVertices[i], worldviewProjectionMatrix);
+		screenVertices[i] = Transform(ndcVertex, viewportMatrix);
+	}
+
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
-
-	Matrix4x4 orthographicMatrix = MakeOrthographicMatrix( -160.f,160.0f,200.0f,300.0f,0.0f,1000.0f );
-	Matrix4x4 perspectiveFovMatrix = MakePerspectiveFovMatrix( 0.63f,1.33f,0.1f,1000.0f );
-	Matrix4x4 viewportMatrix = MakeViweportMatrix( 100.0f,200.0f,600.0f,300.0f,0.0f,1.0f );
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -131,6 +80,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
+		if (keys[DIK_W]) {
+			translate.z += 0.1f;
+		}
+		else if (keys[DIK_S]) {
+			translate.z += -0.1f;
+		}
+		else {}
+		//左右
+		if (keys[DIK_D]) {
+			translate.x += 0.1f;
+		}
+		else if (keys[DIK_A]) {
+			translate.x += -0.1f;
+		}
+		else {}
+
 		///
 		/// ↑更新処理ここまで
 		///
@@ -139,10 +104,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		MatrixScreenPrintf(0, 0, orthographicMatrix, "orthographicMatrix");
-		MatrixScreenPrintf(0, kRowHeight * 5, perspectiveFovMatrix, "perspectiveFovMatrix");
-		MatrixScreenPrintf(0, kRowHeight * 10, viewportMatrix, "viewportMatrix");
-
+		VectorScreenPrintf(0, 0, cross, "Cross");
+		Novice::DrawTriangle(
+			int(screenVertices[0].x), int(screenVertices[0].y),
+			int(screenVertices[1].x), int(screenVertices[1].y),
+			int(screenVertices[2].x), int(screenVertices[2].y),RED,kFillModeSolid);
 		///
 		/// ↑描画処理ここまで
 		///
