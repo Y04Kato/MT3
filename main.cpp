@@ -12,16 +12,19 @@ struct Line {
 	Vector3 diff;
 };
 
-struct Ray
-{
+struct Ray{
 	Vector3 origin;
 	Vector3 diff;
 };
 
-struct Segment
-{
+struct Segment{
 	Vector3 origin;
 	Vector3 diff;
+};
+
+struct Plane{
+	Vector3 normal;
+	float distance;
 };
 
 const char kWindowTitle[] = "LE2B_07_カトウユウタ_タイトル";
