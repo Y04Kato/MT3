@@ -5,11 +5,7 @@
 #include<imgui.h>
 #include<algorithm>
 #include<Vector3.h>
-
-struct Matrix4x4
-{
-	float m[4][4];
-};
+#include<Matrix4x4.h>
 
 struct Line {
 	Vector3 origin;
