@@ -60,7 +60,7 @@ Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
 	return result;
 }
 
-Matrix4x4 Inverse(const Matrix4x4& m){
+Matrix4x4 Inverse(const Matrix4x4& m) {
 	Matrix4x4 result;
 	float determinant =
 		m.m[0][0] * m.m[1][1] * m.m[2][2] * m.m[3][3] + m.m[0][0] * m.m[1][2] * m.m[2][3] * m.m[3][1] + m.m[0][0] * m.m[1][3] * m.m[2][1] * m.m[3][2]
@@ -310,7 +310,7 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 	for (uint32_t xIndex = 0; xIndex <= kSubdivision; ++xIndex) {
 		//ワールド座標
 		worldVertics[0] = { xIndex * kGridEbery - kGridHalfWidth,0.0f, kGridHalfWidth };
-		worldVertics[1] = { xIndex * kGridEbery - kGridHalfWidth ,0.0f,  - kGridHalfWidth };
+		worldVertics[1] = { xIndex * kGridEbery - kGridHalfWidth ,0.0f,  -kGridHalfWidth };
 		//スクリーンへ変換
 		for (uint32_t i = 0; i < 2; ++i) {
 			ndcVertex = Transform(worldVertics[i], viewProjectionMatrix);
@@ -362,7 +362,7 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 	}
 }
 
-struct Sphere{
+struct Sphere {
 	Vector3 center; //中心点
 	float radius;   //半径
 };
@@ -379,7 +379,7 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 			float lon = lonIndex * kLonEvery;//現在の経度
 			//world座標系でのa,b,cを求める
 			Vector3 a, b, c;
-			a = { sphere.radius * cosf(lat) *cosf(lon), sphere.radius * sinf(lat), sphere.radius * cosf(lat) * sinf(lon) };
+			a = { sphere.radius * cosf(lat) * cosf(lon), sphere.radius * sinf(lat), sphere.radius * cosf(lat) * sinf(lon) };
 			a = Add(a, sphere.center);
 			b = { sphere.radius * cosf(lat + kLatEvery) * cosf(lon), sphere.radius * sinf(lat + kLatEvery), sphere.radius * cosf(lat + kLatEvery) * sinf(lon) };
 			b = Add(b, sphere.center);
@@ -415,7 +415,7 @@ Vector3 Normalise(const Vector3& v) {
 	return v;
 }
 
-Vector3 Project(const Vector3& v1,const Vector3& v2) {
+Vector3 Project(const Vector3& v1, const Vector3& v2) {
 	Vector3 result;
 	result = Multiply(Dot(v1, Normalise(v2)), Normalise(v2));
 	return result;
@@ -429,6 +429,17 @@ Vector3 Closestpoint(const Vector3& point, const Segment& segment) {
 	distance = std::clamp(distance, 0.0f, length);
 	Vector3 proj = Multiply(distance, normaliseSeg);
 	return Add(segment.origin, proj);
+}
+
+bool IsCollision(const Sphere& s1, const Sphere& s2) {
+	float result;
+	result = Dot(Subtract(s1.center, s2.center), Subtract(s1.center, s2.center));
+	if (result <= (s1.radius + s2.radius) * (s1.radius + s2.radius)) {
+		return true;
+	}
+	else {
+		return false;
+	}
 }
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -449,10 +460,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Segment segment = { {-2.0f,-1.0f,0.0f},{3.0f,2.0f,2.0f} };
 	Vector3 point = { -1.5f,0.6f,0.6f };
 
+	Sphere sphere1{ { 1.0f, 0.0f, 0.0f }, 1.0f };
+	Sphere sphere2{ { -1.0f, 0.0f, 1.0f }, 0.5f };
+
+	unsigned int color = BLACK;
+
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
-	
+
 	while (Novice::ProcessMessage() == 0) {
 		// フレームの開始
 		Novice::BeginFrame();
@@ -464,7 +480,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		/// ↓更新処理ここから
 		///
-		
+
 		Vector3 project = Project(Subtract(point, segment.origin), segment.diff);
 		Vector3 closestPoint = Closestpoint(point, segment);
 
@@ -473,14 +489,36 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		if (keys[DIK_A]) {
 			translate.x -= 0.1f;
 		}
-		if (keys[DIK_D]) {
+		else if (keys[DIK_D]) {
 			translate.x += 0.1f;
 		}
+
 		if (keys[DIK_S]) {
 			translate.y -= 0.1f;
 		}
-		if (keys[DIK_W]) {
+		else if (keys[DIK_W]) {
 			translate.y += 0.1f;
+		}
+
+		if (keys[DIK_LEFT]) {
+			rotate.y -= 0.05f;
+		}
+		else if (keys[DIK_RIGHT]) {
+			rotate.y += 0.05f;
+		}
+
+		if (keys[DIK_DOWN]) {
+			rotate.x -= 0.05f;
+		}
+		else if (keys[DIK_UP]) {
+			rotate.x += 0.05f;
+		}
+
+		if (Novice::GetWheel() > 0) {
+			cameraPosition.z += 0.5f;
+		}
+		else if (Novice::GetWheel() < 0) {
+			cameraPosition.z -= 0.5f;
 		}
 
 		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
@@ -492,15 +530,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		Vector3 start = Transform(Transform(segment.origin, worldViewProjectionMatrix), viewPortMatrix);
 		Vector3 end = Transform(Transform(Add(segment.origin, segment.diff), worldViewProjectionMatrix), viewPortMatrix);
+		if (IsCollision(sphere1, sphere2)) {
+			color = RED;
+		}
+		else {
+			color = BLACK;
+		}
 
 
 		ImGui::Begin("Window");
-		ImGui::DragFloat3("CameraTranslate", &cameraPosition.x, 0.01f);
-		ImGui::DragFloat3("CameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("point", &point.x, 0.01f);
-		ImGui::DragFloat3("Segment origin", &segment.origin.x, 0.01f);
-		ImGui::DragFloat3("Segment diff", &segment.diff.x, 0.01f);
-		ImGui::InputFloat3("Project", &project.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
+		ImGui::DragFloat3("Sphere[0].Center", &sphere1.center.x, 0.01f);
+		ImGui::DragFloat("Sphere[0].Radius", &sphere1.radius, 0.01f);
+		ImGui::DragFloat3("Sphere[1].Center", &sphere2.center.x, 0.01f);
+		ImGui::DragFloat("Sphere[1].Radius", &sphere2.radius, 0.01f);
 		ImGui::End();
 
 		///
@@ -510,12 +552,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		/// ↓描画処理ここから
 		///
-		
-		DrawSphere(pointSphere, worldViewProjectionMatrix, viewPortMatrix, RED);
-		DrawSphere(closestPointSphere, worldViewProjectionMatrix, viewPortMatrix, BLACK);
-		Novice::DrawLine((int)start.x, (int)start.y, (int)end.x, (int)end.y, WHITE);
+
+		DrawSphere(sphere1, worldViewProjectionMatrix, viewPortMatrix, color);
+		DrawSphere(sphere2, worldViewProjectionMatrix, viewPortMatrix, color);
 		DrawGrid(worldViewProjectionMatrix, viewPortMatrix);
-		
+
 		///
 		/// ↑描画処理ここまで
 		///
@@ -547,7 +588,7 @@ Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip
 	result.m[1][3] = 0;
 	result.m[2][0] = 0;
 	result.m[2][1] = 0;
-	result.m[2][2] = farClip/(farClip-nearClip);
+	result.m[2][2] = farClip / (farClip - nearClip);
 	result.m[2][3] = 1;
 	result.m[3][0] = 0;
 	result.m[3][1] = 0;
@@ -564,16 +605,16 @@ Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float botto
 	result.m[0][2] = 0;
 	result.m[0][3] = 0;
 	result.m[1][0] = 0;
-	result.m[1][1] = 2/(top-bottom);
+	result.m[1][1] = 2 / (top - bottom);
 	result.m[1][2] = 0;
 	result.m[1][3] = 0;
 	result.m[2][0] = 0;
 	result.m[2][1] = 0;
-	result.m[2][2] = 1/(farClip-nearClip);
+	result.m[2][2] = 1 / (farClip - nearClip);
 	result.m[2][3] = 0;
-	result.m[3][0] = (left+right)/(left-right);
-	result.m[3][1] = (top+bottom)/(bottom-top);
-	result.m[3][2] = nearClip/(nearClip-farClip);
+	result.m[3][0] = (left + right) / (left - right);
+	result.m[3][1] = (top + bottom) / (bottom - top);
+	result.m[3][2] = nearClip / (nearClip - farClip);
 	result.m[3][3] = 1;
 	return result;
 }
