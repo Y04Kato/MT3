@@ -12,14 +12,12 @@ struct Line {
 	Vector3 diff;
 };
 
-struct Ray
-{
+struct Ray{
 	Vector3 origin;
 	Vector3 diff;
 };
 
-struct Segment
-{
+struct Segment{
 	Vector3 origin;
 	Vector3 diff;
 };
