@@ -30,6 +30,10 @@ struct Segment {
 	Vector3 diff;
 };
 
+struct Triangle {
+	Vector3 vertricles[3];
+};
+
 const char kWindowTitle[] = "LE2B_07_カトウユウタ_タイトル";
 
 static const int kRowHeight = 20;
@@ -80,8 +84,7 @@ Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
 	return result;
 }
 
-Matrix4x4 Inverse(const Matrix4x4& m)
-{
+Matrix4x4 Inverse(const Matrix4x4& m){
 	Matrix4x4 result;
 	float determinant =
 		m.m[0][0] * m.m[1][1] * m.m[2][2] * m.m[3][3] + m.m[0][0] * m.m[1][2] * m.m[2][3] * m.m[3][1] + m.m[0][0] * m.m[1][3] * m.m[2][1] * m.m[3][2]
