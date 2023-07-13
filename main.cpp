@@ -573,7 +573,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("CameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::DragFloat3("Sphere1Center", &segment.origin.x, 0.01f);
 		ImGui::DragFloat3("PlaneCenter", &plane.normal.x, 0.01f);
-		//ImGui::DragFloat("SphereRadius", &sphere1.radius, 0.01f);
 		ImGui::End();
 
 		if (IsCollision(segment, plane)) {
