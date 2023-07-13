@@ -5,11 +5,11 @@
 #include <imgui.h>
 #define _USE_MATH_DEFINES
 
-struct Matrix4x4{
+struct Matrix4x4 {
 	float m[4][4];
 };
 
-struct Vector3{
+struct Vector3 {
 	float x;
 	float y;
 	float z;
@@ -31,7 +31,7 @@ struct Segment {
 };
 
 struct Triangle {
-	Vector3 vertricles[3];
+	Vector3 vertices[3];
 };
 
 const char kWindowTitle[] = "LE2B_07_カトウユウタ_タイトル";
@@ -84,7 +84,7 @@ Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
 	return result;
 }
 
-Matrix4x4 Inverse(const Matrix4x4& m){
+Matrix4x4 Inverse(const Matrix4x4& m) {
 	Matrix4x4 result;
 	float determinant =
 		m.m[0][0] * m.m[1][1] * m.m[2][2] * m.m[3][3] + m.m[0][0] * m.m[1][2] * m.m[2][3] * m.m[3][1] + m.m[0][0] * m.m[1][3] * m.m[2][1] * m.m[3][2]
@@ -476,6 +476,45 @@ bool IsCollision(const Segment& segment, const Plane& plane) {
 	}
 }
 
+bool IsCollision(const Segment& line, const Triangle& triangle) {
+	Vector3 v01 = Subtract(triangle.vertices[1], triangle.vertices[0]);
+	Vector3 v12 = Subtract(triangle.vertices[2], triangle.vertices[1]);
+	Vector3 v20 = Subtract(triangle.vertices[0], triangle.vertices[2]);
+
+	Plane plane = { Normalise(Cross(v01, v12)),  0.0f };
+	plane.distance = plane.normal.x * v20.x + plane.normal.y * v20.y + plane.normal.z * v20.z;
+
+	float dot = Dot(plane.normal, line.diff);
+
+	if (dot == 0.0f) {
+		return false;
+	}
+
+	float t = (plane.distance - Dot(line.origin, plane.normal)) / dot;
+
+	if (t < 0 || t > 1.0f) {
+		return false;
+	}
+
+	Vector3 p = Add(line.origin, Multiply(t, line.diff));
+
+	Vector3 v1p = Subtract(p, triangle.vertices[1]);
+	Vector3 v2p = Subtract(p, triangle.vertices[2]);
+	Vector3 v0p = Subtract(p, triangle.vertices[0]);
+
+	Vector3 cross01 = Cross(v01, v1p);
+	Vector3 cross12 = Cross(v12, v2p);
+	Vector3 cross20 = Cross(v20, v0p);
+
+	if (Dot(cross01, plane.normal) >= 0.0f &&
+		Dot(cross12, plane.normal) >= 0.0f &&
+		Dot(cross20, plane.normal) >= 0.0f) {
+		return true;
+	}
+
+	return false;
+};
+
 Vector3 Perpendicular(const Vector3& vector) {
 	if (vector.x != 0.0f || vector.y != 0.0f) {
 		return{ -vector.y,vector.x,0.0f };
@@ -523,6 +562,21 @@ void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const 
 	Novice::DrawLine((int)points[3].x, (int)points[3].y, (int)points[0].x, (int)points[0].y, color);
 }
 
+void DrawTriangle(const Triangle& triangle, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, unsigned int color) {
+	Triangle triangle_{
+		Transform(Transform(triangle.vertices[0], viewProjectionMatrix), viewportMatrix),
+		Transform(Transform(triangle.vertices[1], viewProjectionMatrix), viewportMatrix),
+		Transform(Transform(triangle.vertices[2], viewProjectionMatrix), viewportMatrix)
+	};
+
+	Novice::DrawTriangle(
+		int(triangle_.vertices[0].x), int(triangle_.vertices[0].y),
+		int(triangle_.vertices[1].x), int(triangle_.vertices[1].y),
+		int(triangle_.vertices[2].x), int(triangle_.vertices[2].y),
+		color, kFillModeWireFrame
+	);
+};
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -543,8 +597,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Segment segment = { { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f } };
 	Plane plane = { {0.0f,1.0f,0.0f},1.0f };
 
-	unsigned int color = BLACK;
+	Vector3 point{ -1.5f,0.6f,0.6f };
 
+	Triangle triangle{ { -1.0f, 0.0f, 0.0f ,0.0f, 1.0f, 0.0f ,1.0f, 0.0f, 0.0f } };
+
+	unsigned int color = BLACK;
 
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
@@ -575,11 +632,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::Begin("window");
 		ImGui::DragFloat3("CameraTranslate", &translate.x, 0.01f);
 		ImGui::DragFloat3("CameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("Sphere1Center", &segment.origin.x, 0.01f);
-		ImGui::DragFloat3("PlaneCenter", &plane.normal.x, 0.01f);
+		ImGui::DragFloat3("TriangleVertices[0]", &triangle.vertices[0].x, 0.01f);
+		ImGui::DragFloat3("TriangleVertices[1]", &triangle.vertices[1].x, 0.01f);
+		ImGui::DragFloat3("TriangleVertices[2]", &triangle.vertices[2].x, 0.01f);
 		ImGui::End();
 
-		if (IsCollision(segment, plane)) {
+		if (IsCollision(segment, triangle)) {
 			color = RED;
 		}
 		else {
@@ -596,7 +654,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(worldViewProjectionMatrix, viewPortMatrix);
 		Novice::DrawLine((int)start.x, (int)start.y, (int)end.x, (int)end.y, color);
-		DrawPlane(plane, worldViewProjectionMatrix, viewPortMatrix, WHITE);
+
+		DrawTriangle(triangle, worldViewProjectionMatrix, viewPortMatrix, WHITE);
 
 		///
 		/// ↑描画処理ここまで
