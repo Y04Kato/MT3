@@ -3,6 +3,7 @@
 #include <cassert>
 #include <numbers>
 #include <imgui.h>
+#include <algorithm>
 #define _USE_MATH_DEFINES
 
 struct Matrix4x4 {
@@ -643,6 +644,20 @@ bool IsCollision(const AABB& aabb1, const AABB& aabb2) {
 	}
 }
 
+bool IsCollision(const AABB& aabb, const Sphere& sphere) {
+	Vector3 clossestPoint{
+		std::clamp(sphere.center.x, aabb.min.x, aabb.max.x),
+		std::clamp(sphere.center.y, aabb.min.y, aabb.max.y),
+		std::clamp(sphere.center.z, aabb.min.z, aabb.max.z)
+	};
+	float distance = Length(Subtract(clossestPoint, sphere.center));
+	if (distance <= sphere.radius) {
+		return true;
+	}
+	return false;
+
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -658,10 +673,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		.min{-0.5f, -0.5f, -0.5f},
 		.max{ 0.0f, 0.0f, 0.0f}
 	};
-	AABB aabb2{
-		.min{0.2f, 0.2f, 0.2f},
-		.max{ 1.0f, 1.0f, 1.0f}
-	};
+
+	Sphere sphere{ {1.0f, 1.0f, 1.0f},0.1f };
 
 	uint32_t color1 = WHITE;
 	uint32_t color2 = WHITE;
@@ -694,11 +707,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("CameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::DragFloat3("AABB1min", &aabb1.min.x, 0.1f);
 		ImGui::DragFloat3("AABB1max", &aabb1.max.x, 0.1f);
-		ImGui::DragFloat3("AABB2min", &aabb2.min.x, 0.1f);
-		ImGui::DragFloat3("AABB2max", &aabb2.max.x, 0.1f);
+		ImGui::DragFloat3("SpherePosition", &sphere.center.x, 0.1f);
+		ImGui::DragFloat("SphereRadius", &sphere.radius, 0.1f);
 		ImGui::End();
 
-		if (IsCollision(aabb1, aabb2)) {
+		if (IsCollision(aabb1, sphere)) {
 			color1 = RED;
 		}
 		else {
@@ -717,7 +730,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		DrawGrid(worldViewProjectionMatrix, viewPortMatrix);
 
 		DrawAABB(aabb1, worldViewProjectionMatrix, viewPortMatrix, color1);
-		DrawAABB(aabb2, worldViewProjectionMatrix, viewPortMatrix, color2);
+		DrawSphere(sphere, worldViewProjectionMatrix, viewPortMatrix, color2);
 
 		///
 		/// ↑描画処理ここまで
